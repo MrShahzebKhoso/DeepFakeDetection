@@ -44,6 +44,12 @@ python app.py
 ```
 The server will start at `http://127.0.0.1:5000/`.
 
+
+
+### Web UI
+You can also use the Flask-based web UI for uploading and analyzing videos. The UI is designed with HTML, CSS, and JavaScript for a smooth user experience.
+
+
 ### 2. Upload a Video
 Use the `/upload` endpoint to upload a video.
 ```bash
