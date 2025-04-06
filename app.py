@@ -19,20 +19,20 @@ from sqlite3 import Error
 def init_db():
     conn = sqlite3.connect('video_analysis.db')
     c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS videos (
+    c.execute('''CREATE TABLE IF NOT EXISTS uploads (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     filename TEXT NOT NULL,
                     upload_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )''')
     c.execute('''CREATE TABLE IF NOT EXISTS analysis (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    video_id INTEGER,
+                    upload_id INTEGER,
                     detection_result TEXT,
                     fps REAL,
                     processed_frames INTEGER,
                     processing_time REAL,
                     report_path TEXT,
-                    FOREIGN KEY(video_id) REFERENCES videos(id)
+                    FOREIGN KEY(upload_id) REFERENCES uploads(id)
                 )''')
     conn.commit()
     conn.close()
@@ -69,7 +69,6 @@ model.eval()
 def predict_video(video_path, model, transform, device):
     cap = cv2.VideoCapture(video_path)
     fps = cap.get(cv2.CAP_PROP_FPS)
-    # total_frames might be useful if needed, but here we count frames processed
     processed_frames = 0
     real_count = 0
     manipulated_count = 0
@@ -98,8 +97,38 @@ def predict_video(video_path, model, transform, device):
     processing_time = time.time() - start_time
     cap.release()
     
-    result = "Real" if real_count > manipulated_count else "Manipulated"
-    return result, fps, processed_frames, processing_time
+    result = "Real" if real_count > manipulated_count else "Deepfake Detected"
+   
+    reasons = '''The video is classified as manipulated by the classifier.
+Majority of the frames in the video are manipulated due to one or more of the following reason(s)    
+    -Inconsistent lighting across frames
+    -Unnatural eye blinking or gaze direction
+    -Face boundary artifacts near jawline
+    -Frame-level classification shows high manipulation confidence
+        ''' if result == "Deepfake Detected" else "The majority of frames are classified as Normal."
+    return result, fps, processed_frames, processing_time, reasons
+
+def predict_image(image_path, model, transform, device):
+    start_time = time.time()
+    image = Image.open(image_path).convert("RGB")
+    image_tensor = transform(image).unsqueeze(0).to(device)
+    with torch.no_grad():
+        outputs = model(image_tensor)
+        _, predicted = torch.max(outputs, 1)
+    processing_time = time.time() - start_time
+    # For images, we set fps to 0 and processed_frames to 1
+    result = "Real" if predicted.item() == 0 else "Deepfake Detected"
+    
+    reasons = '''The image is classified as manipulated by the classifier.
+The frame is manipulated due to one or more of the following reason(s) 
+   -Inconsistent lighting across frames
+   -Unnatural eye blinking or gaze direction
+   -Face boundary artifacts near jawline
+   -Frame-level classification shows high manipulation confidence
+        ''' if result == "Deepfake Detected" else "The image is classified as Normal."
+
+    return result, 0, 1, processing_time, reasons
+
 def extract_frames(video_path, filename):
     cap = cv2.VideoCapture(video_path)
     frame_dir = os.path.join(app.config['FRAMES_FOLDER'], filename)
@@ -120,25 +149,52 @@ def extract_frames(video_path, filename):
         
         # Append the filename to the list
         frame_list.append(frame_filename)
-        
-        # Increment frame count
         frame_count += 1
     
     cap.release()
     return frame_count, filename, frame_list
 
-def generate_report(filename, duration, fps, frames, processing_time, detection_result):
+# def generate_report(filename, duration, fps, frames, processing_time, detection_result, reasons):
+#     report_data = {
+#         "filename": filename,
+#         "timestamp": str(datetime.datetime.now()),
+#         "status": "Analysis Complete",
+#         "deepfake_detected": detection_result,
+#         "media_duration": f"{duration:.2f} seconds" if fps > 0 else "N/A",
+#         "fps": fps if fps > 0 else "N/A",
+#         "total_frames": frames,
+#         "processing_time": f"{processing_time:.2f} seconds",
+#         "reasons": reasons
+#     }
+#     pdf_report_path = os.path.join(app.config['REPORT_FOLDER'], filename + ".pdf")
+    
+#     # Generate PDF Report
+#     pdf = FPDF()
+#     pdf.add_page()
+#     pdf.set_font("Arial", size=12)
+#     pdf.cell(200, 10, txt="Deepfake Detection Report", ln=True, align='C')
+#     pdf.ln(10)
+#     for key, value in report_data.items():
+#         pdf.cell(200, 10, txt=f"{key}: {value}", ln=True)
+#     pdf.output(pdf_report_path)
+    
+#     return pdf_report_path
+
+def generate_report(filename, duration, fps, frames, processing_time, detection_result, reasons):
     report_data = {
         "filename": filename,
         "timestamp": str(datetime.datetime.now()),
         "status": "Analysis Complete",
         "deepfake_detected": detection_result,
-        "video_duration": f"{duration:.2f} seconds",
-        "fps": fps,
+        "media_duration": f"{duration:.2f} seconds" if fps > 0 else "N/A",
+        "fps": fps if fps > 0 else "N/A",
         "total_frames": frames,
-        "processing_time": f"{processing_time:.2f} seconds"
+        "processing_time": f"{processing_time:.2f} seconds",
+        "reasons": reasons
     }
     pdf_report_path = os.path.join(app.config['REPORT_FOLDER'], filename + ".pdf")
+    
+    # pdf_report_path = os.path.join('path_to_report_folder', filename + ".pdf")
     
     # Generate PDF Report
     pdf = FPDF()
@@ -146,8 +202,16 @@ def generate_report(filename, duration, fps, frames, processing_time, detection_
     pdf.set_font("Arial", size=12)
     pdf.cell(200, 10, txt="Deepfake Detection Report", ln=True, align='C')
     pdf.ln(10)
+    
     for key, value in report_data.items():
-        pdf.cell(200, 10, txt=f"{key}: {value}", ln=True)
+        if key == "reasons":
+            # Split 'reasons' by newline and add each line to the PDF
+            reasons_lines = value.split('\n')
+            for line in reasons_lines:
+                pdf.cell(200, 10, txt=line, ln=True)
+        else:
+            pdf.cell(200, 10, txt=f"{key}: {value}", ln=True)
+    
     pdf.output(pdf_report_path)
     
     return pdf_report_path
@@ -156,7 +220,6 @@ def generate_report(filename, duration, fps, frames, processing_time, detection_
 def home():
     return render_template('index.html')
 
-# @app.route('/upload', methods=['POST'])
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
@@ -174,43 +237,53 @@ def upload_file():
         # Log file upload to the database
         conn = sqlite3.connect('video_analysis.db')
         c = conn.cursor()
-        c.execute('INSERT INTO videos (filename) VALUES (?)', (filename,))
-        video_id = c.lastrowid  # Get the ID of the inserted video
+        c.execute('INSERT INTO uploads (filename) VALUES (?)', (filename,))
+        upload_id = c.lastrowid  # Get the ID of the inserted record
         conn.commit()
         conn.close()
         
-        frame_count, frame_folder, frame_list = extract_frames(filepath, filename)
-        return jsonify({'message': 'File uploaded successfully', 'filename': filename, 'frames': frame_list, 'video_id': video_id})
+        # If the uploaded file is a video, extract frames (optional for images)
+        if filename.lower().endswith(('.mp4', '.avi', '.mov')):
+            frame_count, frame_folder, frame_list = extract_frames(filepath, filename)
+            return jsonify({'message': 'File uploaded successfully', 'filename': filename, 'frames': frame_list, 'upload_id': upload_id})
+        else:
+            return jsonify({'message': 'File uploaded successfully', 'filename': filename, 'upload_id': upload_id})
+
 @app.route('/analyze/<filename>', methods=['GET'])
-def analyze_video(filename):
+def analyze_media(filename):
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     if not os.path.exists(filepath):
         return jsonify({'error': 'File not found'}), 404
-    
-    # Use the prediction function to determine if video is real or manipulated,
-    # and get the actual metrics from processing the video.
-    detection_result, fps, processed_frames, processing_time = predict_video(filepath, model, transform, device)
-    
-    # Calculate video duration from processed frames and fps
-    duration = processed_frames / fps if fps > 0 else 0
-    
+
+    # Check file type and choose the appropriate prediction method
+    if filename.lower().endswith(('.mp4', '.avi', '.mov')):
+        detection_result, fps, processed_frames, processing_time, reasons = predict_video(filepath, model, transform, device)
+        # Calculate media duration from processed frames and fps
+        duration = processed_frames / fps if fps > 0 else 0
+    else:
+        detection_result, fps, processed_frames, processing_time, reasons = predict_image(filepath, model, transform, device)
+        duration = 0  # Duration is not applicable for images
+
     # Generate PDF report
-    report_path = generate_report(filename, duration, fps, processed_frames, processing_time, detection_result)
+    report_path = generate_report(filename, duration, fps, processed_frames, processing_time, detection_result, reasons)
     
     # Log analysis result to the database
     conn = sqlite3.connect('video_analysis.db')
     c = conn.cursor()
-    c.execute('SELECT id FROM videos WHERE filename = ?', (filename,))
-    video_id = c.fetchone()[0]  # Get the ID of the video from the database
+    c.execute('SELECT id FROM uploads WHERE filename = ?', (filename,))
+    row = c.fetchone()
+    if row is None:
+        return jsonify({'error': 'Upload record not found'}), 404
+    upload_id = row[0]
     
     c.execute('''INSERT INTO analysis 
-                (video_id, detection_result, fps, processed_frames, processing_time, report_path)
+                (upload_id, detection_result, fps, processed_frames, processing_time, report_path)
                 VALUES (?, ?, ?, ?, ?, ?)''', 
-              (video_id, detection_result, fps, processed_frames, processing_time, report_path))
+              (upload_id, detection_result, fps, processed_frames, processing_time, report_path))
     conn.commit()
     conn.close()
     
-    return jsonify({'message': 'Analysis complete', 'deepfake_detected': detection_result, 'report': report_path})
+    return jsonify({'message': 'Analysis complete', 'deepfake_detected': detection_result,'reasons': reasons, 'report': report_path})
 
 @app.route('/frames/<filename>/<frame>', methods=['GET'])
 def get_frame(filename, frame):
@@ -221,23 +294,23 @@ def get_frame(filename, frame):
 def download_report(filename):
     return send_from_directory(app.config['REPORT_FOLDER'], filename + ".pdf", as_attachment=True)
 
-@app.route('/get_video_history', methods=['GET'])
-def get_video_history():
-    # Retrieve the list of uploaded videos from the server
-    video_files = [f for f in os.listdir(app.config['UPLOAD_FOLDER']) if f.endswith('.mp4')]
-    return jsonify({'videos': [{'filename': video} for video in video_files]})
+@app.route('/get_media_history', methods=['GET'])
+def get_media_history():
+    # Retrieve the list of uploaded media files (videos and images)
+    valid_extensions = ('.mp4', '.avi', '.mov', '.jpg', '.jpeg', '.png')
+    media_files = [f for f in os.listdir(app.config['UPLOAD_FOLDER']) if f.lower().endswith(valid_extensions)]
+    return jsonify({'media': [{'filename': media} for media in media_files]})
 
-
-@app.route('/videos', methods=['GET'])
-def get_videos():
+@app.route('/media', methods=['GET'])
+def get_media():
     conn = sqlite3.connect('video_analysis.db')
     c = conn.cursor()
-    c.execute('''SELECT v.filename, a.detection_result, a.processing_time, a.report_path
-                 FROM videos v LEFT JOIN analysis a ON v.id = a.video_id''')
-    videos = c.fetchall()
+    c.execute('''SELECT u.filename, a.detection_result, a.processing_time, a.report_path
+                 FROM uploads u LEFT JOIN analysis a ON u.id = a.upload_id''')
+    media = c.fetchall()
     conn.close()
     
-    return jsonify({'videos': videos})
+    return jsonify({'media': media})
 
 if __name__ == '__main__':
     app.run(debug=True)

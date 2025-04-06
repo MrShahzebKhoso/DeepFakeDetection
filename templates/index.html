@@ -62,8 +62,14 @@
             background: #e68900;
         }
         #result, #analysis-result {
-            margin-top: 20px;
+            margin-top: 35px;
             font-weight: bold;
+
+        }
+        #reasons{
+            margin-top: 35px;
+            font-weight: bold;
+            text-align: left;
         }
         .hidden {
             display: none;
@@ -200,6 +206,7 @@
         <button id="analyze-button" class="hidden">Analyze Video</button>
         <div id="progress-bar"></div>
         <div id="analysis-result"></div>
+        <div id="reasons"></div>
         <a id="download-link" class="hidden" download>Download Report</a>
     </div>
 
@@ -223,11 +230,47 @@
     <script>
         let uploadedFilename = '';
         
+        // document.getElementById('upload-form').addEventListener('submit', function(event) {
+        //     event.preventDefault();
+        //     let formData = new FormData();
+        //     let fileInput = document.getElementById('file-input');
+        //     formData.append('file', fileInput.files[0]);
+
+        //     fetch('/upload', { method: 'POST', body: formData })
+        //     .then(response => response.json())
+        //     .then(data => {
+        //         document.getElementById('result').innerText = data.message;
+        //         uploadedFilename = data.filename;
+
+        //         // Display video
+        //         let videoPlayer = document.getElementById('video-player');
+        //         videoPlayer.src = URL.createObjectURL(fileInput.files[0]);
+        //         videoPlayer.classList.remove('hidden');
+
+        //         // Load and display frames
+        //         let framesContainer = document.getElementById('frames-container');
+        //         framesContainer.innerHTML = "";
+        //         for (let i = 0; i < 60; i++) {  // Display first 10 frames
+        //             let img = document.createElement('img');
+        //             img.src = `/frames/${uploadedFilename}/frame_${i}.jpg`;
+        //             img.classList.add('frame');
+        //             framesContainer.appendChild(img);
+        //         }
+        //         framesContainer.classList.remove('hidden');
+
+        //         document.getElementById('analyze-button').classList.remove('hidden');
+        //     });
+        // });
         document.getElementById('upload-form').addEventListener('submit', function(event) {
             event.preventDefault();
-            let formData = new FormData();
+            
             let fileInput = document.getElementById('file-input');
-            formData.append('file', fileInput.files[0]);
+            let file = fileInput.files[0];
+            let formData = new FormData();
+            formData.append('file', file);
+
+            const isImage = file.type.startsWith('image/');
+            const isVideo = file.type.startsWith('video/');
 
             fetch('/upload', { method: 'POST', body: formData })
             .then(response => response.json())
@@ -235,23 +278,43 @@
                 document.getElementById('result').innerText = data.message;
                 uploadedFilename = data.filename;
 
-                // Display video
-                let videoPlayer = document.getElementById('video-player');
-                videoPlayer.src = URL.createObjectURL(fileInput.files[0]);
-                videoPlayer.classList.remove('hidden');
+                // Clear previous display
+                document.getElementById('video-player').classList.add('hidden');
+                document.getElementById('frames-container').classList.add('hidden');
+                const resultDiv = document.getElementById('result');
+                const analyzeBtn = document.getElementById('analyze-button');
+                analyzeBtn.classList.remove('hidden');
 
-                // Load and display frames
-                let framesContainer = document.getElementById('frames-container');
-                framesContainer.innerHTML = "";
-                for (let i = 0; i < 60; i++) {  // Display first 10 frames
-                    let img = document.createElement('img');
-                    img.src = `/frames/${uploadedFilename}/frame_${i}.jpg`;
-                    img.classList.add('frame');
-                    framesContainer.appendChild(img);
+                if (isVideo) {
+                    // Show video
+                    const videoPlayer = document.getElementById('video-player');
+                    videoPlayer.src = URL.createObjectURL(file);
+                    videoPlayer.classList.remove('hidden');
+
+                    // Load frames
+                    let framesContainer = document.getElementById('frames-container');
+                    framesContainer.innerHTML = "";
+                    for (let i = 0; i < 60; i++) {
+                        let img = document.createElement('img');
+                        img.src = `/frames/${uploadedFilename}/frame_${i}.jpg`;
+                        img.classList.add('frame');
+                        framesContainer.appendChild(img);
+                    }
+                    framesContainer.classList.remove('hidden');
+
+                    analyzeBtn.textContent = "Analyze Video";
+
+                } else if (isImage) {
+                    // Show image instead of video
+                    let image = document.createElement('img');
+                    image.src = URL.createObjectURL(file);
+                    image.style.maxWidth = '500px';
+                    image.style.marginTop = '20px';
+                    image.id = 'uploaded-image';
+
+                    resultDiv.appendChild(image);
+                    analyzeBtn.textContent = "Analyze";
                 }
-                framesContainer.classList.remove('hidden');
-
-                document.getElementById('analyze-button').classList.remove('hidden');
             });
         });
 
@@ -262,7 +325,8 @@
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById('progress-bar').style.display = 'none';
-                    document.getElementById('analysis-result').innerText = `${data.message} - Deepfake Detected!`;
+                    document.getElementById('analysis-result').innerText = `${data.message} - ${data.deepfake_detected}`;
+                    document.getElementById('reasons').innerText = data.reasons;
                     document.getElementById('download-link').href = `/download_report/${uploadedFilename}`;
                     document.getElementById('download-link').classList.remove('hidden');
                 });
