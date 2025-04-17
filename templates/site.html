@@ -1,0 +1,1568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeepGuard | Deepfake Detection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Custom CSS for animations and additional styling */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .file-upload {
+            border: 2px dashed #cbd5e0;
+            transition: all 0.3s ease;
+        }
+        
+        .file-upload:hover {
+            border-color: #4f46e5;
+            background-color: #f8fafc;
+        }
+        
+        .file-upload.dragover {
+            border-color: #4f46e5;
+            background-color: #eef2ff;
+        }
+        
+        .detection-result {
+            transition: all 0.3s ease;
+            max-height: 0;
+            overflow: hidden;
+        }
+        
+        .detection-result.show {
+            max-height: 500px;
+        }
+        
+        .nav-link {
+            position: relative;
+        }
+        
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: #4f46e5;
+            transition: width 0.3s ease;
+        }
+        
+        .nav-link:hover::after, .nav-link.active::after {
+            width: 100%;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(79, 70, 229, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- Header -->
+    <header class="bg-indigo-600 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-shield-alt text-3xl"></i>
+                    <h1 class="text-2xl font-bold">DeepGuard</h1>
+                </div>
+                <nav class="hidden md:flex space-x-8">
+                    <a href="#" class="nav-link active" data-tab="home">Home</a>
+                    <a href="#" class="nav-link" data-tab="about">About Deepfake</a>
+                    <a href="#" class="nav-link" data-tab="how-to-use">How to Use</a>
+                    <a href="#" class="nav-link" data-tab="image-upload">Image Upload</a>
+                    <a href="#" class="nav-link" data-tab="video-upload">Video Upload</a>
+                    <a href="#" class="nav-link" data-tab="contact">Contact Us</a>
+                </nav>
+                <button class="md:hidden text-2xl" id="mobile-menu-button">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div class="md:hidden bg-indigo-700 hidden" id="mobile-menu">
+            <div class="container mx-auto px-4 py-2 flex flex-col space-y-3">
+                <a href="#" class="nav-link py-2 active" data-tab="home">Home</a>
+                <a href="#" class="nav-link py-2" data-tab="about">About Deepfake</a>
+                <a href="#" class="nav-link py-2" data-tab="how-to-use">How to Use</a>
+                <a href="#" class="nav-link py-2" data-tab="image-upload">Image Upload</a>
+                <a href="#" class="nav-link py-2" data-tab="video-upload">Video Upload</a>
+                <a href="#" class="nav-link py-2" data-tab="contact">Contact Us</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Home Tab -->
+        <div class="tab-content active" id="home">
+            <section class="text-center mb-12">
+                <h2 class="text-4xl font-bold text-indigo-800 mb-4">Protect Yourself from Deepfakes</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+                    DeepGuard uses advanced AI to detect manipulated media and help you distinguish between real and fake content.
+                </p>
+                <div class="flex justify-center space-x-4">
+                    <button class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 transform hover:scale-105" data-tab="image-upload">
+                        <i class="fas fa-image mr-2"></i> Check an Image
+                    </button>
+                    <button class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 transform hover:scale-105" data-tab="video-upload">
+                        <i class="fas fa-video mr-2"></i> Check a Video
+                    </button>
+                </div>
+            </section>
+
+            <section class="grid md:grid-cols-3 gap-8 mb-12">
+                <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition duration-300">
+                    <div class="text-indigo-600 text-4xl mb-4">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Fast Detection</h3>
+                    <p class="text-gray-600">Get results in seconds with our state-of-the-art deepfake detection algorithms.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition duration-300">
+                    <div class="text-indigo-600 text-4xl mb-4">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">High Accuracy</h3>
+                    <p class="text-gray-600">Our system achieves over 93% accuracy in identifying manipulated media.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition duration-300">
+                    <div class="text-indigo-600 text-4xl mb-4">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Privacy Focused</h3>
+                    <p class="text-gray-600">Your uploaded files are processed securely and never stored permanently.</p>
+                </div>
+            </section>
+
+            <section class="bg-indigo-50 p-8 rounded-xl mb-12">
+                <h2 class="text-2xl font-bold text-indigo-800 mb-4">Recent Deepfake News</h2>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-white p-4 rounded-lg shadow">
+                        <h3 class="font-bold text-lg mb-2">New Deepfake Scams Targeting Businesses</h3>
+                        <p class="text-gray-600 mb-3">Cybercriminals are using deepfake audio to impersonate executives and authorize fraudulent transactions.</p>
+                        <a href="#" class="text-indigo-600 font-medium">Read more →</a>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow">
+                        <h3 class="font-bold text-lg mb-2">Social Media Platforms Struggle with Deepfakes</h3>
+                        <p class="text-gray-600 mb-3">Major platforms report a 300% increase in deepfake content over the past year.</p>
+                        <a href="#" class="text-indigo-600 font-medium">Read more →</a>
+                    </div>
+                </div>
+            </section>
+
+            <section class="text-center">
+                <h2 class="text-2xl font-bold text-indigo-800 mb-4">Trusted By</h2>
+                <div class="flex flex-wrap justify-center items-center gap-8">
+                    <div class="bg-white p-4 rounded-lg shadow-md">
+                        <i class="fas fa-newspaper text-4xl text-gray-700"></i>
+                        <p class="mt-2 font-medium">News Organizations</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-md">
+                        <i class="fas fa-landmark text-4xl text-gray-700"></i>
+                        <p class="mt-2 font-medium">Government Agencies</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-md">
+                        <i class="fas fa-building text-4xl text-gray-700"></i>
+                        <p class="mt-2 font-medium">Corporations</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-md">
+                        <i class="fas fa-graduation-cap text-4xl text-gray-700"></i>
+                        <p class="mt-2 font-medium">Universities</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- About Deepfake Tab -->
+        <div class="tab-content" id="about">
+            <section class="mb-12">
+                <h2 class="text-3xl font-bold text-indigo-800 mb-6">What Are Deepfakes?</h2>
+                <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+                    <p class="text-gray-700 mb-4">
+                        Deepfakes are synthetic media where a person's likeness (face, voice, etc.) is replaced with someone else's using artificial intelligence. The term "deepfake" combines "deep learning" and "fake."
+                    </p>
+                    <p class="text-gray-700">
+                        These AI-generated forgeries can be incredibly convincing, making it difficult to distinguish between real and manipulated content. While the technology has legitimate uses in entertainment and education, it's increasingly being used for malicious purposes like misinformation, fraud, and harassment.
+                    </p>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-8 mb-8">
+                    <div class="bg-indigo-50 p-6 rounded-xl">
+                        <h3 class="text-xl font-bold text-indigo-800 mb-4">How Deepfakes Are Created</h3>
+                        <ul class="space-y-3">
+                            <li class="flex items-start">
+                                <i class="fas fa-database text-indigo-600 mt-1 mr-3"></i>
+                                <span>Training AI models on large datasets of images/videos of the target person</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-project-diagram text-indigo-600 mt-1 mr-3"></i>
+                                <span>Using neural networks to learn facial features and movements</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-exchange-alt text-indigo-600 mt-1 mr-3"></i>
+                                <span>Swapping faces or altering expressions in existing media</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-wave-square text-indigo-600 mt-1 mr-3"></i>
+                                <span>Generating synthetic voice audio from text input</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="bg-indigo-50 p-6 rounded-xl">
+                        <h3 class="text-xl font-bold text-indigo-800 mb-4">Common Uses of Deepfakes</h3>
+                        <ul class="space-y-3">
+                            <li class="flex items-start">
+                                <i class="fas fa-film text-indigo-600 mt-1 mr-3"></i>
+                                <span>Entertainment (e.g., de-aging actors, bringing historical figures to life)</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-comment-dots text-indigo-600 mt-1 mr-3"></i>
+                                <span>Misinformation and fake news</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-user-secret text-indigo-600 mt-1 mr-3"></i>
+                                <span>Impersonation for fraud or blackmail</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-theater-masks text-indigo-600 mt-1 mr-3"></i>
+                                <span>Non-consensual pornography ("revenge porn")</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-bold text-indigo-800 mb-4">How to Spot Deepfakes</h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="flex items-start">
+                            <div class="bg-indigo-100 p-2 rounded-full mr-4">
+                                <i class="fas fa-eye text-indigo-600"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold mb-1">Visual Clues</h4>
+                                <p class="text-gray-600">Look for unnatural blinking, inconsistent lighting, blurring around edges, or facial distortions.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="bg-indigo-100 p-2 rounded-full mr-4">
+                                <i class="fas fa-ear-listen text-indigo-600"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold mb-1">Audio Clues</h4>
+                                <p class="text-gray-600">Listen for unnatural speech patterns, robotic tones, or mismatched lip movements.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="bg-indigo-100 p-2 rounded-full mr-4">
+                                <i class="fas fa-video text-indigo-600"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold mb-1">Video Quality</h4>
+                                <p class="text-gray-600">Deepfakes often have lower resolution than the original video, especially around the face.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="bg-indigo-100 p-2 rounded-full mr-4">
+                                <i class="fas fa-brain text-indigo-600"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold mb-1">Behavioral Cues</h4>
+                                <p class="text-gray-600">Watch for unnatural facial expressions or movements that don't match the person's typical behavior.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="bg-indigo-50 p-8 rounded-xl">
+                <h2 class="text-2xl font-bold text-indigo-800 mb-4">Deepfake Statistics</h2>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="bg-white p-4 rounded-lg shadow text-center">
+                        <div class="text-4xl font-bold text-indigo-600 mb-2">300%</div>
+                        <p class="text-gray-600">Increase in deepfake videos online since 2020</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow text-center">
+                        <div class="text-4xl font-bold text-indigo-600 mb-2">96%</div>
+                        <p class="text-gray-600">Of deepfakes are non-consensual pornography</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow text-center">
+                        <div class="text-4xl font-bold text-indigo-600 mb-2">$250M</div>
+                        <p class="text-gray-600">Lost to deepfake-enabled fraud in 2022</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- How to Use Tab -->
+        <div class="tab-content" id="how-to-use">
+            <section class="mb-12">
+                <h2 class="text-3xl font-bold text-indigo-800 mb-6">How to Use DeepGuard</h2>
+                
+                <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+                    <h3 class="text-xl font-bold text-indigo-800 mb-4">Step-by-Step Guide</h3>
+                    <div class="space-y-6">
+                        <div class="flex items-start">
+                            <div class="bg-indigo-600 text-white font-bold rounded-full w-8 h-8 flex items-center justify-center mr-4 flex-shrink-0">1</div>
+                            <div>
+                                <h4 class="font-bold mb-1">Upload Your Media</h4>
+                                <p class="text-gray-600">Click on either "Image Upload" or "Video Upload" in the navigation menu. You can drag and drop your file or click to browse your device.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="bg-indigo-600 text-white font-bold rounded-full w-8 h-8 flex items-center justify-center mr-4 flex-shrink-0">2</div>
+                            <div>
+                                <h4 class="font-bold mb-1">Processing</h4>
+                                <p class="text-gray-600">Our AI will analyze the media for signs of manipulation. This typically takes 10-30 seconds depending on file size.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="bg-indigo-600 text-white font-bold rounded-full w-8 h-8 flex items-center justify-center mr-4 flex-shrink-0">3</div>
+                            <div>
+                                <h4 class="font-bold mb-1">Review Results</h4>
+                                <p class="text-gray-600">You'll receive a detailed report showing the likelihood of manipulation and highlighting any suspicious elements.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="bg-indigo-600 text-white font-bold rounded-full w-8 h-8 flex items-center justify-center mr-4 flex-shrink-0">4</div>
+                            <div>
+                                <h4 class="font-bold mb-1">Download Report (Optional)</h4>
+                                <p class="text-gray-600">You can download the analysis report for your records or to share with others.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-8 mb-8">
+                    <div class="bg-indigo-50 p-6 rounded-xl">
+                        <h3 class="text-xl font-bold text-indigo-800 mb-4">Tips for Best Results</h3>
+                        <ul class="space-y-3">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-indigo-600 mt-1 mr-3"></i>
+                                <span>Use high-quality images/videos when possible</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-indigo-600 mt-1 mr-3"></i>
+                                <span>For videos, include segments with facial movements</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-indigo-600 mt-1 mr-3"></i>
+                                <span>Check multiple angles if available</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-indigo-600 mt-1 mr-3"></i>
+                                <span>Compare with known authentic media of the person</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="bg-indigo-50 p-6 rounded-xl">
+                        <h3 class="text-xl font-bold text-indigo-800 mb-4">Limitations</h3>
+                        <ul class="space-y-3">
+                            <li class="flex items-start">
+                                <i class="fas fa-exclamation-triangle text-indigo-600 mt-1 mr-3"></i>
+                                <span>Very high-quality deepfakes may be harder to detect</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-exclamation-triangle text-indigo-600 mt-1 mr-3"></i>
+                                <span>Low-resolution media reduces accuracy</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-exclamation-triangle text-indigo-600 mt-1 mr-3"></i>
+                                <span>New deepfake techniques may not be immediately detectable</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-exclamation-triangle text-indigo-600 mt-1 mr-3"></i>
+                                <span>Results should be considered alongside other evidence</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-bold text-indigo-800 mb-4">Frequently Asked Questions</h3>
+                    <div class="space-y-4">
+                        <div class="border-b border-gray-200 pb-4">
+                            <button class="flex justify-between items-center w-full text-left font-bold" onclick="toggleFAQ(this)">
+                                <span>Is my uploaded media stored permanently?</span>
+                                <i class="fas fa-chevron-down transition-transform duration-300"></i>
+                            </button>
+                            <div class="faq-content mt-2 text-gray-600 hidden">
+                                No, your uploaded files are automatically deleted after analysis. We only store the analysis results temporarily for you to review.
+                            </div>
+                        </div>
+                        <div class="border-b border-gray-200 pb-4">
+                            <button class="flex justify-between items-center w-full text-left font-bold" onclick="toggleFAQ(this)">
+                                <span>What file formats are supported?</span>
+                                <i class="fas fa-chevron-down transition-transform duration-300"></i>
+                            </button>
+                            <div class="faq-content mt-2 text-gray-600 hidden">
+                                For images: JPG, PNG, WEBP (max 10MB). For videos: MP4, MOV, AVI (max 100MB).
+                            </div>
+                        </div>
+                        <div class="border-b border-gray-200 pb-4">
+                            <button class="flex justify-between items-center w-full text-left font-bold" onclick="toggleFAQ(this)">
+                                <span>How accurate is the detection?</span>
+                                <i class="fas fa-chevron-down transition-transform duration-300"></i>
+                            </button>
+                            <div class="faq-content mt-2 text-gray-600 hidden">
+                                Our current model achieves 93% accuracy on our test dataset. However, accuracy may vary with different types of deepfakes and media quality.
+                            </div>
+                        </div>
+                        <div class="border-b border-gray-200 pb-4">
+                            <button class="flex justify-between items-center w-full text-left font-bold" onclick="toggleFAQ(this)">
+                                <span>Can I use this for commercial purposes?</span>
+                                <i class="fas fa-chevron-down transition-transform duration-300"></i>
+                            </button>
+                            <div class="faq-content mt-2 text-gray-600 hidden">
+                                For commercial use or API access, please contact us for enterprise solutions.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Image Upload Tab -->
+        <div class="tab-content" id="image-upload">
+            <section class="max-w-4xl mx-auto">
+                <h2 class="text-3xl font-bold text-indigo-800 mb-6">Image Deepfake Detection</h2>
+                
+                <div class="bg-white p-8 rounded-xl shadow-md mb-8">
+                    <div id="image-upload-container" class="file-upload rounded-lg p-12 text-center cursor-pointer mb-6">
+                        <i class="fas fa-cloud-upload-alt text-5xl text-indigo-400 mb-4"></i>
+                        <h3 class="text-xl font-bold text-gray-700 mb-2">Drag & Drop Your Image Here</h3>
+                        <p class="text-gray-500 mb-4">or click to browse files</p>
+                        <p class="text-sm text-gray-400">Supported formats: JPG, PNG, WEBP (max 10MB)</p>
+                        <input type="file" id="image-file-input" class="hidden" accept="image/jpeg,image/png,image/webp">
+                    </div>
+                    
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h4 class="font-bold text-gray-700">Selected File:</h4>
+                            <p id="selected-image-name" class="text-gray-500">No file selected</p>
+                        </div>
+                        <button id="analyze-image-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            Analyze Image
+                        </button>
+                    </div>
+                    
+                    <div id="image-analysis-progress" class="hidden mb-8">
+                        <img id="uploaded-image-preview" class="max-w-full rounded-lg shadow-md mt-4 hidden" />
+                        <div class="flex justify-between mb-2">
+                            <span class="font-medium text-gray-700">Analyzing...</span>
+                            <span id="image-progress-percent" class="font-medium text-indigo-600">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            
+
+                            <div id="image-progress-bar" class="bg-indigo-600 h-2.5 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="image-detection-result" class="detection-result bg-gray-50 p-6 rounded-lg">
+                        <!-- Results will be shown here -->
+                    </div>
+                </div>
+                
+                <div class="bg-indigo-50 p-6 rounded-xl">
+                    <h3 class="text-xl font-bold text-indigo-800 mb-4">What We Analyze</h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="flex items-start">
+                            <div class="bg-indigo-100 p-2 rounded-full mr-4">
+                                <i class="fas fa-face-smile text-indigo-600"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold mb-1">Facial Features</h4>
+                                <p class="text-gray-600">We examine facial symmetry, skin texture, and feature alignment for inconsistencies.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="bg-indigo-100 p-2 rounded-full mr-4">
+                                <i class="fas fa-lightbulb text-indigo-600"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold mb-1">Lighting Analysis</h4>
+                                <p class="text-gray-600">We check for unnatural lighting patterns and shadows that may indicate manipulation.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="bg-indigo-100 p-2 rounded-full mr-4">
+                                <i class="fas fa-fingerprint text-indigo-600"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold mb-1">Digital Fingerprints</h4>
+                                <p class="text-gray-600">We look for artifacts left by AI generation tools in the image metadata and pixels.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="bg-indigo-100 p-2 rounded-full mr-4">
+                                <i class="fas fa-border-none text-indigo-600"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold mb-1">Edge Detection</h4>
+                                <p class="text-gray-600">We analyze the edges around the face for blurring or unnatural blending with the background.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Video Upload Tab -->
+        <div class="tab-content" id="video-upload">
+            <section class="max-w-4xl mx-auto">
+                <h2 class="text-3xl font-bold text-indigo-800 mb-6">Video Deepfake Detection</h2>
+                
+                <div class="bg-white p-8 rounded-xl shadow-md mb-8">
+                    <div id="video-upload-container" class="file-upload rounded-lg p-12 text-center cursor-pointer mb-6">
+                        <i class="fas fa-cloud-upload-alt text-5xl text-indigo-400 mb-4"></i>
+                        <h3 class="text-xl font-bold text-gray-700 mb-2">Drag & Drop Your Video Here</h3>
+                        <p class="text-gray-500 mb-4">or click to browse files</p>
+                        <p class="text-sm text-gray-400">Supported formats: MP4, MOV, AVI (max 100MB)</p>
+                        <input type="file" id="video-file-input" class="hidden" accept="video/mp4,video/quicktime,video/x-msvideo">
+                    </div>
+                    
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h4 class="font-bold text-gray-700">Selected File:</h4>
+                            <p id="selected-video-name" class="text-gray-500">No file selected</p>
+                        </div>
+                        <button id="analyze-video-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            Analyze Video
+                        </button>
+                    </div>
+                    
+                    <div id="video-analysis-progress" class="hidden mb-8">
+                        <img id="uploaded-video-preview" class="max-w-full rounded-lg shadow-md mt-4 hidden" />
+
+                        <div class="flex justify-between mb-2">
+                            <span class="font-medium text-gray-700">Analyzing...</span>
+                            <span id="video-progress-percent" class="font-medium text-indigo-600">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div id="video-progress-bar" class="bg-indigo-600 h-2.5 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="video-detection-result" class="detection-result bg-gray-50 p-6 rounded-lg">
+                        <!-- Results will be shown here -->
+                    </div>
+                </div>
+                
+                <div class="bg-indigo-50 p-6 rounded-xl">
+                    <h3 class="text-xl font-bold text-indigo-800 mb-4">What We Analyze in Videos</h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="flex items-start">
+                            <div class="bg-indigo-100 p-2 rounded-full mr-4">
+                                <i class="fas fa-eye text-indigo-600"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold mb-1">Facial Movements</h4>
+                                <p class="text-gray-600">We track facial expressions and micro-movements for unnatural patterns.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="bg-indigo-100 p-2 rounded-full mr-4">
+                                <i class="fas fa-wave-square text-indigo-600"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold mb-1">Digital Forensics</h4>
+                                <p class="text-gray-600">We check for inconsistencies in the facial and overall structure in each frame.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="bg-indigo-100 p-2 rounded-full mr-4">
+                                <i class="fas fa-head-side-virus text-indigo-600"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold mb-1">Majority Voting</h4>
+                                <p class="text-gray-600">We examine each of the frames of video, and use majority vote to identify the detection of deepfake.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="bg-indigo-100 p-2 rounded-full mr-4">
+                                <i class="fas fa-video-slash text-indigo-600"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold mb-1">Frame-by-Frame Analysis</h4>
+                                <p class="text-gray-600">We examine each frame for inconsistencies while maintaining temporal coherence.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Contact Us Tab -->
+        <div class="tab-content" id="contact">
+            <section class="max-w-4xl mx-auto">
+                <h2 class="text-3xl font-bold text-indigo-800 mb-6">Contact Us</h2>
+                
+                <div class="grid md:grid-cols-2 gap-8 mb-12">
+                    <div class="bg-white p-8 rounded-xl shadow-md">
+                        <h3 class="text-xl font-bold text-indigo-800 mb-6">Send Us a Message</h3>
+                        <form id="contact-form">
+                            <div class="mb-4">
+                                <label for="name" class="block text-gray-700 font-medium mb-2">Name</label>
+                                <input type="text" id="name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+                            <div class="mb-4">
+                                <label for="email" class="block text-gray-700 font-medium mb-2">Email</label>
+                                <input type="email" id="email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+                            <div class="mb-4">
+                                <label for="subject" class="block text-gray-700 font-medium mb-2">Subject</label>
+                                <select id="subject" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="">Select a subject</option>
+                                    <option value="general">General Inquiry</option>
+                                    <option value="technical">Technical Support</option>
+                                    <option value="business">Business Partnership</option>
+                                    <option value="media">Media Inquiry</option>
+                                </select>
+                            </div>
+                            <div class="mb-6">
+                                <label for="message" class="block text-gray-700 font-medium mb-2">Message</label>
+                                <textarea id="message" rows="5" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                            </div>
+                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300">
+                                Send Message
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <div>
+                        <div class="bg-white p-8 rounded-xl shadow-md mb-8">
+                            <h3 class="text-xl font-bold text-indigo-800 mb-6">Contact Information</h3>
+                            <div class="space-y-4">
+                                <div class="flex items-start">
+                                    <div class="bg-indigo-100 p-3 rounded-full mr-4">
+                                        <i class="fas fa-map-marker-alt text-indigo-600"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-gray-700">Address</h4>
+                                        <p class="text-gray-600">123 AI Security Blvd, Tech Park, San Francisco, CA 94107</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start">
+                                    <div class="bg-indigo-100 p-3 rounded-full mr-4">
+                                        <i class="fas fa-envelope text-indigo-600"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-gray-700">Email</h4>
+                                        <p class="text-gray-600">contact@deepguard.ai</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start">
+                                    <div class="bg-indigo-100 p-3 rounded-full mr-4">
+                                        <i class="fas fa-phone-alt text-indigo-600"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-gray-700">Phone</h4>
+                                        <p class="text-gray-600">+1 (415) 555-0199</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start">
+                                    <div class="bg-indigo-100 p-3 rounded-full mr-4">
+                                        <i class="fas fa-clock text-indigo-600"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-gray-700">Hours</h4>
+                                        <p class="text-gray-600">Monday - Friday: 9:00 AM - 6:00 PM PST</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-indigo-50 p-6 rounded-xl">
+                            <h3 class="text-xl font-bold text-indigo-800 mb-4">Follow Us</h3>
+                            <div class="flex space-x-4">
+                                <a href="#" class="bg-white p-3 rounded-full shadow-md text-indigo-600 hover:bg-indigo-100 transition duration-300">
+                                    <i class="fab fa-twitter text-xl"></i>
+                                </a>
+                                <a href="#" class="bg-white p-3 rounded-full shadow-md text-indigo-600 hover:bg-indigo-100 transition duration-300">
+                                    <i class="fab fa-linkedin-in text-xl"></i>
+                                </a>
+                                <a href="#" class="bg-white p-3 rounded-full shadow-md text-indigo-600 hover:bg-indigo-100 transition duration-300">
+                                    <i class="fab fa-facebook-f text-xl"></i>
+                                </a>
+                                <a href="#" class="bg-white p-3 rounded-full shadow-md text-indigo-600 hover:bg-indigo-100 transition duration-300">
+                                    <i class="fab fa-github text-xl"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-8 rounded-xl shadow-md">
+                    <h3 class="text-xl font-bold text-indigo-800 mb-6">Frequently Asked Questions</h3>
+                    <div class="space-y-4">
+                        <div class="border-b border-gray-200 pb-4">
+                            <button class="flex justify-between items-center w-full text-left font-bold" onclick="toggleFAQ(this)">
+                                <span>How can I report a deepfake I've found?</span>
+                                <i class="fas fa-chevron-down transition-transform duration-300"></i>
+                            </button>
+                            <div class="faq-content mt-2 text-gray-600 hidden">
+                                You can report deepfakes by emailing our team at reports@deepguard.ai with details about the content and where you found it. Include any relevant links or files if possible.
+                            </div>
+                        </div>
+                        <div class="border-b border-gray-200 pb-4">
+                            <button class="flex justify-between items-center w-full text-left font-bold" onclick="toggleFAQ(this)">
+                                <span>Do you offer API access for developers?</span>
+                                <i class="fas fa-chevron-down transition-transform duration-300"></i>
+                            </button>
+                            <div class="faq-content mt-2 text-gray-600 hidden">
+                                Yes, we offer API access for enterprise customers and developers. Please contact our business team through the contact form for more information.
+                            </div>
+                        </div>
+                        <div class="border-b border-gray-200 pb-4">
+                            <button class="flex justify-between items-center w-full text-left font-bold" onclick="toggleFAQ(this)">
+                                <span>How can I protect myself from deepfake scams?</span>
+                                <i class="fas fa-chevron-down transition-transform duration-300"></i>
+                            </button>
+                            <div class="faq-content mt-2 text-gray-600 hidden">
+                                Be skeptical of unusual requests via video calls or audio messages, especially involving money or sensitive information. Verify identities through multiple channels, and use tools like DeepGuard to check suspicious media.
+                            </div>
+                        </div>
+                        <div class="border-b border-gray-200 pb-4">
+                            <button class="flex justify-between items-center w-full text-left font-bold" onclick="toggleFAQ(this)">
+                                <span>Are you hiring?</span>
+                                <i class="fas fa-chevron-down transition-transform duration-300"></i>
+                            </button>
+                            <div class="faq-content mt-2 text-gray-600 hidden">
+                                We're always looking for talented individuals in AI research, security, and development. Check our careers page or send your resume to careers@deepguard.ai.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-12">
+        <div class="container mx-auto px-4">
+            <div class="grid md:grid-cols-4 gap-8 mb-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-shield-alt mr-2"></i> DeepGuard
+                    </h3>
+                    <p class="text-gray-400">
+                        Advanced deepfake detection technology to help combat misinformation and protect digital identities.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="text-lg font-bold mb-4">Quick Links</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white transition duration-300" data-tab="home">Home</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition duration-300" data-tab="about">About Deepfakes</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition duration-300" data-tab="how-to-use">How to Use</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition duration-300" data-tab="image-upload">Image Detection</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition duration-300" data-tab="video-upload">Video Detection</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-bold mb-4">Resources</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white transition duration-300">Blog</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition duration-300">Research Papers</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition duration-300">Case Studies</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition duration-300">API Documentation</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition duration-300">Help Center</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-bold mb-4">Newsletter</h4>
+                    <p class="text-gray-400 mb-4">
+                        Subscribe to our newsletter for the latest updates on deepfake technology and security tips.
+                    </p>
+                    <form class="flex">
+                        <input type="email" placeholder="Your email" class="px-4 py-2 rounded-l-lg focus:outline-none text-gray-800 w-full">
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-r-lg transition duration-300">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 pt-8 flex flex-col md:flex-row justify-between items-center">
+                <p class="text-gray-400 mb-4 md:mb-0">
+                    &copy; 2025 DeepGuard. All rights reserved.
+                </p>
+                <div class="flex space-x-6">
+                    <a href="#" class="text-gray-400 hover:text-white transition duration-300">Privacy Policy</a>
+                    <a href="#" class="text-gray-400 hover:text-white transition duration-300">Terms of Service</a>
+                    <a href="#" class="text-gray-400 hover:text-white transition duration-300">Cookie Policy</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Tab switching functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mobile menu toggle
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            
+            mobileMenuButton.addEventListener('click', function() {
+                mobileMenu.classList.toggle('hidden');
+            });
+            
+            // Tab switching
+            const tabLinks = document.querySelectorAll('[data-tab]');
+            
+            tabLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Hide mobile menu if open
+                    mobileMenu.classList.add('hidden');
+                    
+                    const tabId = this.getAttribute('data-tab');
+                    
+                    // Update active tab in navigation
+                    tabLinks.forEach(link => {
+                        link.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    
+                    // Show selected tab content
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    document.getElementById(tabId).classList.add('active');
+                    
+                    // Scroll to top
+                    window.scrollTo(0, 0);
+                });
+            });
+            
+            // File upload functionality for images
+            const imageUploadContainer = document.getElementById('image-upload-container');
+            const imageFileInput = document.getElementById('image-file-input');
+            const selectedImageName = document.getElementById('selected-image-name');
+            const analyzeImageBtn = document.getElementById('analyze-image-btn');
+            
+            imageUploadContainer.addEventListener('click', function() {
+                imageFileInput.click();
+            });
+            
+            imageFileInput.addEventListener('change', function() {
+                if (this.files.length > 0) {
+                    selectedImageName.textContent = this.files[0].name;
+                    analyzeImageBtn.disabled = false;
+                    
+                    // Preview image (optional)
+                    // const reader = new FileReader();
+                    // reader.onload = function(e) {
+                    //     // Display preview
+                    // };
+                    // reader.readAsDataURL(this.files[0]);
+                }
+            });
+            
+            // Drag and drop for images
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                imageUploadContainer.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                imageUploadContainer.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                imageUploadContainer.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight() {
+                imageUploadContainer.classList.add('dragover');
+            }
+            
+            function unhighlight() {
+                imageUploadContainer.classList.remove('dragover');
+            }
+            
+            imageUploadContainer.addEventListener('drop', handleDrop, false);
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                if (files.length > 0) {
+                    imageFileInput.files = files;
+                    selectedImageName.textContent = files[0].name;
+                    analyzeImageBtn.disabled = false;
+                }
+            }
+            
+
+//Preview Image Function Code
+
+analyzeImageBtn.addEventListener('click', function () {
+    const file = imageFileInput.files[0];
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const progressBar = document.getElementById('image-progress-bar');
+    const progressPercent = document.getElementById('image-progress-percent');
+    const progressContainer = document.getElementById('image-analysis-progress');
+    const resultContainer = document.getElementById('image-detection-result');
+    const imagePreview = document.getElementById('uploaded-image-preview');
+
+    // Reset UI
+    progressBar.style.width = '0%';
+    progressPercent.textContent = '0%';
+    progressContainer.classList.remove('hidden');
+    resultContainer.classList.remove('show');
+    resultContainer.innerHTML = '';
+
+    fetch('/upload', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        const filename = data.filename;
+
+        // Show preview of uploaded image
+        imagePreview.src = `/uploads/${filename}`;
+        imagePreview.classList.remove('hidden');
+
+        // Simulate progress bar while analysis is running
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 5;
+            if (progress >= 95) {
+                clearInterval(interval);
+                progress = 95;
+            }
+            progressBar.style.width = `${progress}%`;
+            progressPercent.textContent = `${progress}%`;
+        }, 300);
+
+        return fetch(`/analyze/${filename}`)
+            .then(response => response.json())
+            .then(result => {
+                clearInterval(interval);
+                progressBar.style.width = `100%`;
+                progressPercent.textContent = `100%`;
+
+                const isDeepfake = result.deepfake_detected === 'Deepfake Detected';
+                const confidence = result.confidence?.toFixed(1) || "N/A";
+
+                let resultHTML = `
+                    <h3 class="text-xl font-bold mb-4">Analysis Results</h3>
+                    <div class="mb-6">
+                        <div class="flex justify-between mb-1">
+                            <span class="font-medium">${result.deepfake_detected}</span>
+                            <span class="font-bold ${isDeepfake ? 'text-red-600' : 'text-green-600'}">${confidence}% Confidence</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="h-2.5 rounded-full ${isDeepfake ? 'bg-red-500' : 'bg-green-500'}" style="width: ${confidence}%"></div>
+                        </div>
+                    </div>
+                `;
+
+                resultHTML += isDeepfake ? `
+                    <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+                        <div class="flex">
+                            <div class="flex-shrink-0 text-red-500"><i class="fas fa-exclamation-triangle"></i></div>
+                            <div class="ml-3">
+                                <h4 class="font-bold text-red-800">Warning: Deepfake Detected</h4>
+                                <p class="text-red-700">${result.reasons}</p>
+                            </div>
+                        </div>
+                    </div>
+                ` : `
+                    <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
+                        <div class="flex">
+                            <div class="flex-shrink-0 text-green-500"><i class="fas fa-check-circle"></i></div>
+                            <div class="ml-3">
+                                <h4 class="font-bold text-green-800">No Deepfake Detected</h4>
+                                <p class="text-green-700">${result.reasons}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                if (result.report) {
+                    const reportFilename = result.report.split('/').pop().replace('.pdf', '');
+                    resultHTML += `
+                        <div class="text-right">
+                            <a href="/download_report/${reportFilename}" target="_blank"
+                               class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition duration-300">
+                                <i class="fas fa-download mr-2"></i> Download Report
+                            </a>
+                        </div>
+                    `;
+                }
+
+                resultContainer.innerHTML = resultHTML;
+                resultContainer.classList.add('show');
+            });
+    })
+    .catch(err => {
+        console.error(err);
+        progressContainer.classList.add('hidden');
+        resultContainer.innerHTML = `<p class="text-red-600">Error: ${err.message || 'Something went wrong.'}</p>`;
+        resultContainer.classList.add('show');
+    });
+});
+
+            
+            function showImageResults() {
+                const resultContainer = document.getElementById('image-detection-result');
+                
+                // Simulate analysis results (in a real app, this would come from your backend)
+                const isDeepfake = Math.random() > 0.7; // 30% chance of being a deepfake for demo
+                const confidence = (Math.random() * 30 + 70).toFixed(1); // 70-100% confidence
+                
+                let resultHTML = `
+                    <h3 class="text-xl font-bold mb-4">Analysis Results</h3>
+                    <div class="mb-6">
+                        <div class="flex justify-between mb-1">
+                            <span class="font-medium">${isDeepfake ? 'Deepfake Detected' : 'No Deepfake Detected'}</span>
+                            <span class="font-bold ${isDeepfake ? 'text-red-600' : 'text-green-600'}">${confidence}% Confidence</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="h-2.5 rounded-full ${isDeepfake ? 'bg-red-500' : 'bg-green-500'}" style="width: ${confidence}%"></div>
+                        </div>
+                    </div>
+                `;
+                
+                if (isDeepfake) {
+                    resultHTML += `
+                        <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+                            <div class="flex">
+                                <div class="flex-shrink-0 text-red-500">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <h4 class="font-bold text-red-800">Warning: Potential Deepfake</h4>
+                                    <p class="text-red-700">Our analysis detected signs of AI manipulation in this image with ${confidence}% confidence.</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    resultHTML += `
+                        <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
+                            <div class="flex">
+                                <div class="flex-shrink-0 text-green-500">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <h4 class="font-bold text-green-800">No Deepfake Detected</h4>
+                                    <p class="text-green-700">Our analysis found no significant signs of AI manipulation in this image.</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                resultHTML += `
+                    <h4 class="font-bold mb-2">Detailed Analysis</h4>
+                    <div class="grid md:grid-cols-2 gap-4 mb-6">
+                        <div class="bg-white p-3 rounded-lg shadow-sm">
+                            <div class="flex justify-between mb-1">
+                                <span class="font-medium">Facial Features</span>
+                                <span class="font-bold ${Math.random() > 0.7 ? 'text-red-500' : 'text-green-500'}">${(Math.random() * 30 + 70).toFixed(1)}%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                <div class="h-1.5 rounded-full ${Math.random() > 0.7 ? 'bg-red-400' : 'bg-green-400'}" style="width: ${(Math.random() * 30 + 70).toFixed(1)}%"></div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg shadow-sm">
+                            <div class="flex justify-between mb-1">
+                                <span class="font-medium">Lighting Analysis</span>
+                                <span class="font-bold ${Math.random() > 0.7 ? 'text-red-500' : 'text-green-500'}">${(Math.random() * 30 + 70).toFixed(1)}%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                <div class="h-1.5 rounded-full ${Math.random() > 0.7 ? 'bg-red-400' : 'bg-green-400'}" style="width: ${(Math.random() * 30 + 70).toFixed(1)}%"></div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg shadow-sm">
+                            <div class="flex justify-between mb-1">
+                                <span class="font-medium">Digital Fingerprints</span>
+                                <span class="font-bold ${Math.random() > 0.7 ? 'text-red-500' : 'text-green-500'}">${(Math.random() * 30 + 70).toFixed(1)}%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                <div class="h-1.5 rounded-full ${Math.random() > 0.7 ? 'bg-red-400' : 'bg-green-400'}" style="width: ${(Math.random() * 30 + 70).toFixed(1)}%"></div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg shadow-sm">
+                            <div class="flex justify-between mb-1">
+                                <span class="font-medium">Edge Detection</span>
+                                <span class="font-bold ${Math.random() > 0.7 ? 'text-red-500' : 'text-green-500'}">${(Math.random() * 30 + 70).toFixed(1)}%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                <div class="h-1.5 rounded-full ${Math.random() > 0.7 ? 'bg-red-400' : 'bg-green-400'}" style="width: ${(Math.random() * 30 + 70).toFixed(1)}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between">
+                        <button class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition duration-300">
+                            <i class="fas fa-redo mr-2"></i> Reanalyze
+                        </button>
+                        <button class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition duration-300">
+                            <i class="fas fa-download mr-2"></i> Download Report
+                        </button>
+                    </div>
+                `;
+                
+                resultContainer.innerHTML = resultHTML;
+                resultContainer.classList.add('show');
+            }
+            
+            // File upload functionality for videos (similar to images)
+            const videoUploadContainer = document.getElementById('video-upload-container');
+            const videoFileInput = document.getElementById('video-file-input');
+            const selectedVideoName = document.getElementById('selected-video-name');
+            const analyzeVideoBtn = document.getElementById('analyze-video-btn');
+            
+            videoUploadContainer.addEventListener('click', function() {
+                videoFileInput.click();
+            });
+            
+            videoFileInput.addEventListener('change', function() {
+                if (this.files.length > 0) {
+                    selectedVideoName.textContent = this.files[0].name;
+                    analyzeVideoBtn.disabled = false;
+                }
+            });
+            
+            // Drag and drop for videos
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                videoUploadContainer.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                videoUploadContainer.addEventListener(eventName, highlightVideo, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                videoUploadContainer.addEventListener(eventName, unhighlightVideo, false);
+            });
+            
+            function highlightVideo() {
+                videoUploadContainer.classList.add('dragover');
+            }
+            
+            function unhighlightVideo() {
+                videoUploadContainer.classList.remove('dragover');
+            }
+            
+            videoUploadContainer.addEventListener('drop', handleVideoDrop, false);
+            
+            function handleVideoDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                if (files.length > 0) {
+                    videoFileInput.files = files;
+                    selectedVideoName.textContent = files[0].name;
+                    analyzeVideoBtn.disabled = false;
+                }
+            }
+            analyzeVideoBtn.addEventListener('click', function () {
+    const file = videoFileInput.files[0];
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const progressBar = document.getElementById('video-progress-bar');
+    const progressPercent = document.getElementById('video-progress-percent');
+    const progressContainer = document.getElementById('video-analysis-progress');
+    const resultContainer = document.getElementById('video-detection-result');
+    const videoPreview = document.getElementById('uploaded-video-preview');
+
+    // Reset UI
+    progressBar.style.width = '0%';
+    progressPercent.textContent = '0%';
+    progressContainer.classList.remove('hidden');
+    resultContainer.classList.remove('show');
+    resultContainer.innerHTML = '';
+    videoPreview.classList.add('hidden');
+
+    // Step 1: Upload video
+    fetch('/upload', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        const filename = data.filename;
+
+        // Step 2: Show preview thumbnail (frame_0.jpg)
+        const frameUrl = `/frames/${filename}/frame_0.jpg`;
+        videoPreview.src = frameUrl;
+        videoPreview.classList.remove('hidden');
+
+        // Step 3: Simulate progress bar
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 5;
+            if (progress >= 95) {
+                clearInterval(interval);
+                progress = 95;
+            }
+            progressBar.style.width = `${progress}%`;
+            progressPercent.textContent = `${progress}%`;
+        }, 300);
+
+        // Step 4: Analyze video
+        return fetch(`/analyze/${filename}`)
+            .then(response => response.json())
+            .then(result => {
+                clearInterval(interval);
+                progressBar.style.width = `100%`;
+                progressPercent.textContent = `100%`;
+
+                const totalFrames = result.total_frames || 1;
+                const manipulatedFrames = result.manipulated_frames || 0;
+                const percentManipulated = ((manipulatedFrames / totalFrames) * 100).toFixed(1);
+
+                const isDeepfake = result.deepfake_detected === 'Deepfake Detected';
+
+                let resultHTML = `
+                    <h3 class="text-xl font-bold mb-4">Video Analysis Results</h3>
+                    <div class="mb-6">
+                        <div class="flex justify-between mb-1">
+                            <span class="font-medium">${result.deepfake_detected}</span>
+                            <span class="font-bold ${isDeepfake ? 'text-red-600' : 'text-green-600'}">${percentManipulated}% of frames</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="h-2.5 rounded-full ${isDeepfake ? 'bg-red-500' : 'bg-green-500'}" style="width: ${percentManipulated}%"></div>
+                        </div>
+                    </div>
+                `;
+
+                resultHTML += isDeepfake ? `
+                    <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+                        <div class="flex">
+                            <div class="flex-shrink-0 text-red-500"><i class="fas fa-exclamation-triangle"></i></div>
+                            <div class="ml-3">
+                                <h4 class="font-bold text-red-800">Warning: Deepfake Detected</h4>
+                                <p class="text-red-700">${result.reasons}</p>
+                            </div>
+                        </div>
+                    </div>
+                ` : `
+                    <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
+                        <div class="flex">
+                            <div class="flex-shrink-0 text-green-500"><i class="fas fa-check-circle"></i></div>
+                            <div class="ml-3">
+                                <h4 class="font-bold text-green-800">No Deepfake Detected</h4>
+                                <p class="text-green-700">${result.reasons}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                if (result.report) {
+                    const reportFilename = result.report.split('/').pop().replace('.pdf', '');
+                    resultHTML += `
+                        <div class="text-right">
+                            <a href="/download_report/${reportFilename}" target="_blank"
+                               class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition duration-300">
+                                <i class="fas fa-download mr-2"></i> Download Report
+                            </a>
+                        </div>
+                    `;
+                }
+
+                resultContainer.innerHTML = resultHTML;
+                resultContainer.classList.add('show');
+            });
+    })
+    .catch(err => {
+        console.error(err);
+        progressContainer.classList.add('hidden');
+        resultContainer.innerHTML = `<p class="text-red-600">Error: ${err.message}</p>`;
+        resultContainer.classList.add('show');
+    });
+});
+
+analyzeVideoBtn.addEventListener('click', function () {
+    const file = videoFileInput.files[0];
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const progressBar = document.getElementById('video-progress-bar');
+    const progressPercent = document.getElementById('video-progress-percent');
+    const progressContainer = document.getElementById('video-analysis-progress');
+    const resultContainer = document.getElementById('video-detection-result');
+    const videoPreview = document.getElementById('uploaded-video-preview');
+
+    // Reset UI
+    progressBar.style.width = '0%';
+    progressPercent.textContent = '0%';
+    progressContainer.classList.remove('hidden');
+    resultContainer.classList.remove('show');
+    resultContainer.innerHTML = '';
+    videoPreview.classList.add('hidden');
+
+    // Step 1: Upload video
+    fetch('/upload', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        const filename = data.filename;
+
+        // Step 2: Show preview thumbnail (frame_0.jpg)
+        const frameUrl = `/frames/${filename}/frame_0.jpg`;
+        videoPreview.src = frameUrl;
+        videoPreview.classList.remove('hidden');
+
+        // Step 3: Simulate progress bar
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 5;
+            if (progress >= 95) {
+                clearInterval(interval);
+                progress = 95;
+            }
+            progressBar.style.width = `${progress}%`;
+            progressPercent.textContent = `${progress}%`;
+        }, 300);
+
+        // Step 4: Analyze video
+        return fetch(`/analyze/${filename}`)
+            .then(response => response.json())
+            .then(result => {
+                clearInterval(interval);
+                progressBar.style.width = `100%`;
+                progressPercent.textContent = `100%`;
+
+                const totalFrames = result.total_frames || 1;
+                const manipulatedFrames = result.manipulated_frames || 0;
+                const percentManipulated = ((manipulatedFrames / totalFrames) * 100).toFixed(1);
+
+                const isDeepfake = result.deepfake_detected === 'Deepfake Detected';
+
+                let resultHTML = `
+                    <h3 class="text-xl font-bold mb-4">Video Analysis Results</h3>
+                    <div class="mb-6">
+                        <div class="flex justify-between mb-1">
+                            <span class="font-medium">${result.deepfake_detected}</span>
+                            <span class="font-bold ${isDeepfake ? 'text-red-600' : 'text-green-600'}">${percentManipulated}% of frames</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="h-2.5 rounded-full ${isDeepfake ? 'bg-red-500' : 'bg-green-500'}" style="width: ${percentManipulated}%"></div>
+                        </div>
+                    </div>
+                `;
+
+                resultHTML += isDeepfake ? `
+                    <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+                        <div class="flex">
+                            <div class="flex-shrink-0 text-red-500"><i class="fas fa-exclamation-triangle"></i></div>
+                            <div class="ml-3">
+                                <h4 class="font-bold text-red-800">Warning: Deepfake Detected</h4>
+                                <p class="text-red-700">${result.reasons}</p>
+                            </div>
+                        </div>
+                    </div>
+                ` : `
+                    <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
+                        <div class="flex">
+                            <div class="flex-shrink-0 text-green-500"><i class="fas fa-check-circle"></i></div>
+                            <div class="ml-3">
+                                <h4 class="font-bold text-green-800">No Deepfake Detected</h4>
+                                <p class="text-green-700">${result.reasons}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                if (result.report) {
+                    const reportFilename = result.report.split('/').pop().replace('.pdf', '');
+                    resultHTML += `
+                        <div class="text-right">
+                            <a href="/download_report/${reportFilename}" target="_blank"
+                               class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition duration-300">
+                                <i class="fas fa-download mr-2"></i> Download Report
+                            </a>
+                        </div>
+                    `;
+                }
+
+                resultContainer.innerHTML = resultHTML;
+                resultContainer.classList.add('show');
+            });
+    })
+    .catch(err => {
+        console.error(err);
+        progressContainer.classList.add('hidden');
+        resultContainer.innerHTML = `<p class="text-red-600">Error: ${err.message}</p>`;
+        resultContainer.classList.add('show');
+    });
+});
+
+
+            
+            function showVideoResults() {
+                const resultContainer = document.getElementById('video-detection-result');
+                
+                // Simulate analysis results (in a real app, this would come from your backend)
+                const isDeepfake = Math.random() > 0.7; // 30% chance of being a deepfake for demo
+                const confidence = (Math.random() * 30 + 70).toFixed(1); // 70-100% confidence
+                
+                let resultHTML = `
+                    <h3 class="text-xl font-bold mb-4">Analysis Results</h3>
+                    <div class="mb-6">
+                        <div class="flex justify-between mb-1">
+                            <span class="font-medium">${isDeepfake ? 'Deepfake Detected' : 'No Deepfake Detected'}</span>
+                            <span class="font-bold ${isDeepfake ? 'text-red-600' : 'text-green-600'}">${confidence}% Confidence</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="h-2.5 rounded-full ${isDeepfake ? 'bg-red-500' : 'bg-green-500'}" style="width: ${confidence}%"></div>
+                        </div>
+                    </div>
+                `;
+                
+                if (isDeepfake) {
+                    resultHTML += `
+                        <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+                            <div class="flex">
+                                <div class="flex-shrink-0 text-red-500">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <h4 class="font-bold text-red-800">Warning: Potential Deepfake</h4>
+                                    <p class="text-red-700">Our analysis detected signs of AI manipulation in this video with ${confidence}% confidence.</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    resultHTML += `
+                        <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
+                            <div class="flex">
+                                <div class="flex-shrink-0 text-green-500">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <h4 class="font-bold text-green-800">No Deepfake Detected</h4>
+                                    <p class="text-green-700">Our analysis found no significant signs of AI manipulation in this video.</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                resultHTML += `
+                    <h4 class="font-bold mb-2">Detailed Analysis</h4>
+                    <div class="grid md:grid-cols-2 gap-4 mb-6">
+                        <div class="bg-white p-3 rounded-lg shadow-sm">
+                            <div class="flex justify-between mb-1">
+                                <span class="font-medium">Facial Movements</span>
+                                <span class="font-bold ${Math.random() > 0.7 ? 'text-red-500' : 'text-green-500'}">${(Math.random() * 30 + 70).toFixed(1)}%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                <div class="h-1.5 rounded-full ${Math.random() > 0.7 ? 'bg-red-400' : 'bg-green-400'}" style="width: ${(Math.random() * 30 + 70).toFixed(1)}%"></div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg shadow-sm">
+                            <div class="flex justify-between mb-1">
+                                <span class="font-medium">Audio-Visual Sync</span>
+                                <span class="font-bold ${Math.random() > 0.7 ? 'text-red-500' : 'text-green-500'}">${(Math.random() * 30 + 70).toFixed(1)}%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                <div class="h-1.5 rounded-full ${Math.random() > 0.7 ? 'bg-red-400' : 'bg-green-400'}" style="width: ${(Math.random() * 30 + 70).toFixed(1)}%"></div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg shadow-sm">
+                            <div class="flex justify-between mb-1">
+                                <span class="font-medium">Voice Analysis</span>
+                                <span class="font-bold ${Math.random() > 0.7 ? 'text-red-500' : 'text-green-500'}">${(Math.random() * 30 + 70).toFixed(1)}%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                <div class="h-1.5 rounded-full ${Math.random() > 0.7 ? 'bg-red-400' : 'bg-green-400'}" style="width: ${(Math.random() * 30 + 70).toFixed(1)}%"></div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg shadow-sm">
+                            <div class="flex justify-between mb-1">
+                                <span class="font-medium">Frame Consistency</span>
+                                <span class="font-bold ${Math.random() > 0.7 ? 'text-red-500' : 'text-green-500'}">${(Math.random() * 30 + 70).toFixed(1)}%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                <div class="h-1.5 rounded-full ${Math.random() > 0.7 ? 'bg-red-400' : 'bg-green-400'}" style="width: ${(Math.random() * 30 + 70).toFixed(1)}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between">
+                        <button class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition duration-300">
+                            <i class="fas fa-redo mr-2"></i> Reanalyze
+                        </button>
+                        <button class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition duration-300">
+                            <i class="fas fa-download mr-2"></i> Download Report
+                        </button>
+                    </div>
+                `;
+                
+                resultContainer.innerHTML = resultHTML;
+                resultContainer.classList.add('show');
+            }
+            
+            // Contact form submission
+            const contactForm = document.getElementById('contact-form');
+            contactForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Get form values
+                const name = document.getElementById('name').value;
+                const email = document.getElementById('email').value;
+                const subject = document.getElementById('subject').value;
+                const message = document.getElementById('message').value;
+                
+                // In a real app, you would send this data to your server
+                console.log('Form submitted:', { name, email, subject, message });
+                
+                // Show success message
+                alert('Thank you for your message! We will get back to you soon.');
+                
+                // Reset form
+                contactForm.reset();
+            });
+        });
+        
+        // FAQ toggle function
+        function toggleFAQ(button) {
+            const faqContent = button.nextElementSibling;
+            const icon = button.querySelector('i');
+            
+            faqContent.classList.toggle('hidden');
+            icon.classList.toggle('rotate-180');
+        }
+    </script>
+</body>
+</html>

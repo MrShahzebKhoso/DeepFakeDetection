@@ -3,7 +3,7 @@
 This is a Flask-based API for detecting deepfake videos using a ViT-based model. The system allows users to upload videos, analyze them for manipulation, and generate reports.
 
 ## Features
-- Upload video files for analysis
+- Upload video/image files for analysis
 - Extract frames from videos
 - Detect deepfake content using a Vision Transformer (ViT) model
 - Generate reports in PDF format
@@ -51,22 +51,15 @@ You can also use the Flask-based web UI for uploading and analyzing videos. The 
 
 
 ### 2. Upload a Video
-Use the `/upload` endpoint to upload a video.
-```bash
-curl -X POST -F "file=@path/to/video.mp4" http://127.0.0.1:5000/upload
-```
+Go to Analyze Image, upload the image and click analyze. It will display the results there.
+
 
 ### 3. Analyze a Video
-Trigger analysis on an uploaded video:
-```bash
-curl -X GET http://127.0.0.1:5000/analyze/video.mp4
-```
+Go to Analyze Video, upload the image and click analyze. It will display the results there.
+
 
 ### 4. Download Report
-Download the generated PDF report:
-```bash
-curl -X GET http://127.0.0.1:5000/download_report/video.mp4 -o report.pdf
-```
+Once the analysis is complete, you can download the report.
 
 ## API Endpoints
 | Method | Endpoint | Description |

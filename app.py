@@ -106,28 +106,31 @@ Majority of the frames in the video are manipulated due to one or more of the fo
     -Face boundary artifacts near jawline
     -Frame-level classification shows high manipulation confidence
         ''' if result == "Deepfake Detected" else "The majority of frames are classified as Normal."
-    return result, fps, processed_frames, processing_time, reasons
+    return result, fps, processed_frames, processing_time, reasons, manipulated_count
 
 def predict_image(image_path, model, transform, device):
     start_time = time.time()
     image = Image.open(image_path).convert("RGB")
     image_tensor = transform(image).unsqueeze(0).to(device)
+    
     with torch.no_grad():
         outputs = model(image_tensor)
-        _, predicted = torch.max(outputs, 1)
+        probabilities = torch.nn.functional.softmax(outputs, dim=1)
+        confidence, predicted = torch.max(probabilities, 1)
+        confidence_score = confidence.item() * 100  # convert to percentage
+
     processing_time = time.time() - start_time
-    # For images, we set fps to 0 and processed_frames to 1
     result = "Real" if predicted.item() == 0 else "Deepfake Detected"
     
     reasons = '''The image is classified as manipulated by the classifier.
-The frame is manipulated due to one or more of the following reason(s) 
-   -Inconsistent lighting across frames
-   -Unnatural eye blinking or gaze direction
-   -Face boundary artifacts near jawline
-   -Frame-level classification shows high manipulation confidence
-        ''' if result == "Deepfake Detected" else "The image is classified as Normal."
+The frame is manipulated due to one or more of the following reason(s): 
+   - Inconsistent lighting
+   - Unnatural blinking or gaze
+   - Artifacts near jawline
+   - High manipulation confidence
+    ''' if result == "Deepfake Detected" else "The image is classified as Normal."
 
-    return result, 0, 1, processing_time, reasons
+    return result, 0, 1, processing_time, reasons, confidence_score
 
 def extract_frames(video_path, filename):
     cap = cv2.VideoCapture(video_path)
@@ -154,32 +157,6 @@ def extract_frames(video_path, filename):
     cap.release()
     return frame_count, filename, frame_list
 
-# def generate_report(filename, duration, fps, frames, processing_time, detection_result, reasons):
-#     report_data = {
-#         "filename": filename,
-#         "timestamp": str(datetime.datetime.now()),
-#         "status": "Analysis Complete",
-#         "deepfake_detected": detection_result,
-#         "media_duration": f"{duration:.2f} seconds" if fps > 0 else "N/A",
-#         "fps": fps if fps > 0 else "N/A",
-#         "total_frames": frames,
-#         "processing_time": f"{processing_time:.2f} seconds",
-#         "reasons": reasons
-#     }
-#     pdf_report_path = os.path.join(app.config['REPORT_FOLDER'], filename + ".pdf")
-    
-#     # Generate PDF Report
-#     pdf = FPDF()
-#     pdf.add_page()
-#     pdf.set_font("Arial", size=12)
-#     pdf.cell(200, 10, txt="Deepfake Detection Report", ln=True, align='C')
-#     pdf.ln(10)
-#     for key, value in report_data.items():
-#         pdf.cell(200, 10, txt=f"{key}: {value}", ln=True)
-#     pdf.output(pdf_report_path)
-    
-#     return pdf_report_path
-
 def generate_report(filename, duration, fps, frames, processing_time, detection_result, reasons):
     report_data = {
         "filename": filename,
@@ -193,9 +170,7 @@ def generate_report(filename, duration, fps, frames, processing_time, detection_
         "reasons": reasons
     }
     pdf_report_path = os.path.join(app.config['REPORT_FOLDER'], filename + ".pdf")
-    
-    # pdf_report_path = os.path.join('path_to_report_folder', filename + ".pdf")
-    
+     
     # Generate PDF Report
     pdf = FPDF()
     pdf.add_page()
@@ -218,7 +193,8 @@ def generate_report(filename, duration, fps, frames, processing_time, detection_
 
 @app.route('/')
 def home():
-    return render_template('index.html')
+    # return render_template('index.html')
+    return render_template('site.html')
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -249,19 +225,24 @@ def upload_file():
         else:
             return jsonify({'message': 'File uploaded successfully', 'filename': filename, 'upload_id': upload_id})
 
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
 @app.route('/analyze/<filename>', methods=['GET'])
 def analyze_media(filename):
+    confidence = 0
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     if not os.path.exists(filepath):
         return jsonify({'error': 'File not found'}), 404
 
     # Check file type and choose the appropriate prediction method
     if filename.lower().endswith(('.mp4', '.avi', '.mov')):
-        detection_result, fps, processed_frames, processing_time, reasons = predict_video(filepath, model, transform, device)
+        detection_result, fps, processed_frames, processing_time, reasons, manipulated_count = predict_video(filepath, model, transform, device)
         # Calculate media duration from processed frames and fps
         duration = processed_frames / fps if fps > 0 else 0
     else:
-        detection_result, fps, processed_frames, processing_time, reasons = predict_image(filepath, model, transform, device)
+        detection_result, fps, processed_frames, processing_time, reasons, confidence = predict_image(filepath, model, transform, device)
         duration = 0  # Duration is not applicable for images
 
     # Generate PDF report
@@ -283,7 +264,23 @@ def analyze_media(filename):
     conn.commit()
     conn.close()
     
-    return jsonify({'message': 'Analysis complete', 'deepfake_detected': detection_result,'reasons': reasons, 'report': report_path})
+    if(confidence==0):
+        return jsonify({
+            'message': 'Analysis complete',
+            'deepfake_detected': detection_result,
+            'reasons': reasons,
+            'report': report_path,
+            'total_frames': processed_frames,
+            'manipulated_frames': manipulated_count
+            })
+    else:
+        return jsonify({
+            'message': 'Analysis complete',
+            'deepfake_detected': detection_result,
+            'reasons': reasons, 
+            'report': report_path, 
+            'confidence': confidence
+            })
 
 @app.route('/frames/<filename>/<frame>', methods=['GET'])
 def get_frame(filename, frame):
