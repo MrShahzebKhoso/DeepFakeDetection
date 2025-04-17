@@ -51,15 +51,13 @@ You can also use the Flask-based web UI for uploading and analyzing videos. The 
 
 
 ### 2. Upload a Video
-Go to Analyze Image, upload the image and click analyze. It will display the results there.
+Go to Image Upload or click Check an Image on Home page. Upload the image and click Analyze Image. It will display the results there.
+
+Go to Video Upload or click Check an Video on Home page. Upload the video and click Analyze Video. It will display the results there.
 
 
-### 3. Analyze a Video
-Go to Analyze Video, upload the image and click analyze. It will display the results there.
-
-
-### 4. Download Report
-Once the analysis is complete, you can download the report.
+### 3. Download Report
+Once the analysis is complete, you can download the report. After completion of analysis, click Download Report. It will download a detailed pdf to your local system.
 
 ## API Endpoints
 | Method | Endpoint | Description |
